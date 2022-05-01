@@ -901,10 +901,14 @@ void postToggleLastFocusedFxDeltaSolo(int command) {
 }
 
 bool shouldReportScrub = true;
+bool shouldReportFullTimeMovement = false;
 
 void postCursorMovement(int command) {
 	fakeFocus = FOCUS_RULER;
 	if (shouldReportTimeMovement()) {
+		if (shouldReportFullTimeMovement) {
+			resetTimeCache();
+		}
 		outputMessage(formatCursorPosition().c_str());
 	}
 }
@@ -1064,6 +1068,9 @@ void postGoToMarker(int command) {
 			s << translate("loop end") << " ";
 		}
 	}
+	if (shouldReportFullTimeMovement) {
+		resetTimeCache();
+	}
 	s << formatCursorPosition();
 	if (s.tellp() > 0)
 		outputMessage(s);
@@ -1117,6 +1124,9 @@ void postGoToSpecificMarker(int command) {
 				// Translators: used to report an unnamed marker. {} is replaced with the marker number.  
 				s << format(translate("marker {}"), num);
 			}
+		}
+		if (shouldReportFullTimeMovement) {
+			resetTimeCache();
 		}
 		s << " " << formatCursorPosition();
 		outputMessage(s);
@@ -4149,6 +4159,8 @@ void loadConfig() {
 		GetExtState(CONFIG_SECTION, "reportMarkersWhilePlaying")[0] == '1';
 	shouldReportTrackNumbers =
 		GetExtState(CONFIG_SECTION, "reportTrackNumbers")[0] != '0';
+	shouldReportFullTimeMovement =
+		GetExtState(CONFIG_SECTION, "reportFullTimeMovement")[0] == '1';
 }
 
 void config_onOk(HWND dialog) {
@@ -4185,6 +4197,10 @@ void config_onOk(HWND dialog) {
 		ID_CONFIG_REPORT_TRACK_NUMBERS) == BST_CHECKED;
 	SetExtState(CONFIG_SECTION, "reportTrackNumbers",
 		shouldReportTrackNumbers ? "1" : "0", true);
+	shouldReportFullTimeMovement = IsDlgButtonChecked(dialog,
+		ID_CONFIG_REPORT_FULL_TIME_MOVEMENT) == BST_CHECKED;
+	SetExtState(CONFIG_SECTION, "reportFullTimeMovement",
+		shouldReportFullTimeMovement ? "1" : "0", true);
 }
 
 INT_PTR CALLBACK config_dialogProc(HWND dialog, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -4230,6 +4246,8 @@ void cmdConfig(Command* command) {
 		shouldReportMarkersWhilePlaying ? BST_CHECKED : BST_UNCHECKED);
 	CheckDlgButton(dialog, ID_CONFIG_REPORT_TRACK_NUMBERS,
 		shouldReportTrackNumbers ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(dialog, ID_CONFIG_REPORT_FULL_TIME_MOVEMENT,
+		shouldReportFullTimeMovement ? BST_CHECKED : BST_UNCHECKED);
 
 	ShowWindow(dialog, SW_SHOWNORMAL);
 }
